@@ -7,6 +7,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 public class Macro { 
+
+  public static String macroReplace(String call, ArrayList macro) {
+    System.out.println(call);
+    return "Teste";
+  }
+
   public static void main(String[] args) {
 
     ArrayList<String> asm = new ArrayList<String> ();
@@ -23,7 +29,6 @@ public class Macro {
 
       while (myReader.hasNextLine()) {
         String line = myReader.nextLine();
-        asm.add(line);
 
         //Se tiver palavra MACRO, começa a salvar o código em macro
         if(line.contains("MACRO")) {
@@ -47,6 +52,12 @@ public class Macro {
         if(storeMacro) {
           macro.add(line);
         }
+
+        if(macroName != null && line.contains(macroName)) {
+          macroReplace(line, macro);
+        }
+
+        asm.add(line);
       }
 
       myReader.close();
@@ -67,8 +78,8 @@ public class Macro {
 
       myWriter.close();
     } catch (IOException e) {
-      System.out.println("An error occurred.");
-      e.printStackTrace();
+        System.out.println("An error occurred.");
+        e.printStackTrace();
     }
   }
 }
