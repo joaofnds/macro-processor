@@ -32,6 +32,10 @@ public class Macro {
           //Remove o comentário
           String[] aux = line.split(";");
           line = aux[0];
+
+          //Salvando o nome da função Macro
+          aux = line.split(" ");
+          macroName = aux[0];
         }
 
         //Se chegar ao fim, muda a variável de controle de store do macro
