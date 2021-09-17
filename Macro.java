@@ -1,7 +1,10 @@
 import java.io.File;  
 import java.io.FileNotFoundException;  
+import java.io.IOException;
+import java.io.FileWriter; 
 import java.util.Scanner;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class Macro { 
   public static void main(String[] args) {
@@ -20,23 +23,39 @@ public class Macro {
         String line = myReader.nextLine();
         asm.add(line);
 
+        //Se tiver palavra MACRO, começa a salvar o código em macro
         if(line.contains("MACRO")) {
           storeMacro = true;
         }
 
+        //Se chegar ao fim, muda a variável de controle de store do macro
         if(line.contains("ENDM")) {
           storeMacro = false;
         }
 
+        //Enquanto variável for verdadeira, salva o código do Macro
         if(storeMacro) {
           macro.add(line);
         }
       }
 
-      System.out.println(macro);
       myReader.close();
 
     } catch (FileNotFoundException e) {
+        System.out.println("An error occurred.");
+        e.printStackTrace();
+    }
+
+    try {
+      FileWriter myWriter = new FileWriter("filename.txt");
+      Iterator iterator = macro.iterator();
+
+      while(iterator.hasNext()) {
+        myWriter.write(iterator.next() + "\n");
+      }
+
+      myWriter.close();
+    } catch (IOException e) {
       System.out.println("An error occurred.");
       e.printStackTrace();
     }
