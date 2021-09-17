@@ -12,7 +12,9 @@ public class Macro {
     ArrayList<String> asm = new ArrayList<String> ();
     ArrayList<String> macro = new ArrayList<String> ();
 
+    //Variável indicando se deve guardar o código refente ao macro
     boolean storeMacro = false;
+    String macroName = null;
 
     //Leitura do arquivo asm
     try {
@@ -26,6 +28,10 @@ public class Macro {
         //Se tiver palavra MACRO, começa a salvar o código em macro
         if(line.contains("MACRO")) {
           storeMacro = true;
+          
+          //Remove o comentário
+          String[] aux = line.split(";");
+          line = aux[0];
         }
 
         //Se chegar ao fim, muda a variável de controle de store do macro
@@ -45,11 +51,12 @@ public class Macro {
         System.out.println("An error occurred.");
         e.printStackTrace();
     }
-
+  
+    //Criação e escrita de arquivo
     try {
       FileWriter myWriter = new FileWriter("filename.txt");
-      Iterator iterator = macro.iterator();
 
+      Iterator iterator = macro.iterator();
       while(iterator.hasNext()) {
         myWriter.write(iterator.next() + "\n");
       }
