@@ -5,13 +5,17 @@ import java.util.HashMap;
 import java.util.List;
 
 public class MacroProcessor {
-    private final String inputFileName = "teste_macro_z808.asm";
-    private final String outputFileName = "output.asm";
+    private final String inputFileName;
     private final HashMap<String, Macro> macros = new HashMap<>();
     private State state = State.NORMAL;
 
+    public MacroProcessor(String inputFile) {
+        this.inputFileName = inputFile;
+    }
+
     public static void main(String[] args) throws IOException {
-        new MacroProcessor().processMacro();
+        var inputFile = args[0];
+        new MacroProcessor(inputFile).processMacro();
     }
 
     private void processMacro() throws IOException {
@@ -70,7 +74,7 @@ public class MacroProcessor {
     }
 
     private void writeOutput(ArrayList<String> macro) throws IOException {
-        FileWriter fileWriter = new FileWriter(outputFileName);
+        FileWriter fileWriter = new FileWriter(inputFileName);
         for (String line : macro) {
             fileWriter.write(line + "\n");
         }
