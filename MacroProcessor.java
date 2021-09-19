@@ -1,88 +1,111 @@
-import java.io.File;  
-import java.io.FileNotFoundException;  
-import java.io.IOException;
-import java.io.FileWriter; 
-import java.util.Scanner;
+import java.io.*;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
-public class MacroProcessor { 
+public class MacroProcessor {
+    private final String inputFileName = "teste_macro_z808.asm";
+    private final String outputFileName = "output.asm";
+    private final HashMap<String, Macro> macros = new HashMap<>();
+    private State state = State.NORMAL;
 
-  public static ArrayList macroReplace(String call, ArrayList macro) {
-    ArrayList<String> code = new ArrayList<String>();
-    Iterator iterator = macro.iterator();
-    return code;
-  }
-
-  public static void main(String[] args) {
-
-    ArrayList<String> asm = new ArrayList<String>();
-    ArrayList<String> macro = new ArrayList<String>();
-
-    ArrayList<String> macroSub = new ArrayList<String>();
-
-    //Variável indicando se deve guardar o código refente ao macro
-    boolean storeMacro = false;
-    String macroName = null;
-
-    //Leitura do arquivo asm
-    try {
-      File myObj = new File("teste_macro_z808.asm");
-      Scanner myReader = new Scanner(myObj);
-
-      while (myReader.hasNextLine()) {
-        String line = myReader.nextLine();
-
-        //Se tiver palavra MACRO, começa a salvar o código em macro
-        if(line.contains("MACRO")) {
-          storeMacro = true;
-          
-          //Remove o comentário
-          String[] aux = line.split(";");
-          line = aux[0];
-
-          //Salvando o nome da função Macro
-          aux = line.split(" ");
-          macroName = aux[0];
-        }
-
-        //Se chegar ao fim, muda a variável de controle de store do macro
-        if(line.contains("ENDM")) {
-          storeMacro = false;
-        }
-
-        //Enquanto variável for verdadeira, salva o código do Macro
-        if(storeMacro) {
-          macro.add(line);
-        }
-
-        if(macroName != null && line.contains(macroName)) {
-          macroSub = macroReplace(line, macro);
-        }
-
-        asm.add(line);
-      }
-
-      myReader.close();
-
-    } catch (FileNotFoundException e) {
-        System.out.println("An error occurred.");
-        e.printStackTrace();
+    public static void main(String[] args) throws IOException {
+        new MacroProcessor().processMacro();
     }
-  
-    //Criação e escrita de arquivo
-    try {
-      FileWriter myWriter = new FileWriter("filename.txt");
 
-      Iterator iterator = macro.iterator();
-      while(iterator.hasNext()) {
-        myWriter.write(iterator.next() + "\n");
-      }
+    private void processMacro() throws IOException {
+        var lines = new ArrayList<String>();
 
-      myWriter.close();
-    } catch (IOException e) {
-        System.out.println("An error occurred.");
-        e.printStackTrace();
+        var reader = getInputFileReader();
+        String line;
+        var macroBuilder = new MacroBuilder();
+        var previousState = state;
+
+        while ((line = reader.readLine()) != null) {
+            line = removeSubsequentSpaces(line);
+
+            previousState = state;
+            state = newStateFromLine(line);
+
+            switch (state) {
+                case DEFINITION:
+                    if (previousState == State.NORMAL) {
+                        macroBuilder = new MacroBuilder();
+                    }
+                    macroBuilder.parseLine(line);
+                    break;
+                case NORMAL:
+                    if (previousState == State.DEFINITION) {
+                        var macro = macroBuilder.build();
+                        macros.put(macro.getName(), macro);
+                    }
+                    break;
+                case EXPANSION:
+                    var tokens = parseMacroCall(line);
+                    var macro = macros.get(tokens.get(0));
+                    line = macro.expand(tokens.subList(1, tokens.size()));
+                    state = State.NORMAL;
+                    break;
+            }
+
+            lines.add(line);
+        }
+
+        reader.close();
+
+        writeOutput(lines);
     }
-  }
+
+    private State newStateFromLine(String line) {
+        if (hasMacroDefinition(line)) return State.DEFINITION;
+        if (hasMacroEnd(line)) return State.NORMAL;
+        if (hasMacroCall(line)) return State.EXPANSION;
+
+        return state;
+    }
+
+    private BufferedReader getInputFileReader() throws FileNotFoundException {
+        return new BufferedReader(new FileReader(inputFileName));
+    }
+
+    private void writeOutput(ArrayList<String> macro) throws IOException {
+        FileWriter fileWriter = new FileWriter(outputFileName);
+        for (String line : macro) {
+            fileWriter.write(line + "\n");
+        }
+        fileWriter.close();
+    }
+
+    private boolean hasMacroEnd(String line) {
+        return line.contains(Token.MCEND.toString());
+    }
+
+    private boolean hasMacroDefinition(String line) {
+        return line.contains(Token.MCDEFN.toString());
+    }
+
+    private boolean hasMacroCall(String line) {
+        if (!line.trim().contains(" ")) {
+            return false;
+        }
+
+        var names = macros.values().stream().map(Macro::getName).toList();
+        var firstToken = line.split(" ")[0];
+        return names.contains(firstToken);
+    }
+
+    private List<String> parseMacroCall(String line) {
+        return Arrays.stream(line.split("[\s,]"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+    }
+
+
+    private String removeSubsequentSpaces(String str) {
+        return str.replaceAll("\\s+", " ");
+    }
+
+    enum State {NORMAL, DEFINITION, EXPANSION}
 }

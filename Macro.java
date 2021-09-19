@@ -1,85 +1,31 @@
-import java.io.File;  
-import java.io.FileNotFoundException;  
-import java.io.IOException;
-import java.io.FileWriter; 
-import java.util.Scanner;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.List;
 
-public class Macro { 
+public class Macro {
+    private final String name;
+    private final List<String> args;
+    private final List<String> body;
 
-  public static String macroReplace(String call, ArrayList macro) {
-    System.out.println(call);
-    return "Teste";
-  }
-
-  public static void main(String[] args) {
-
-    ArrayList<String> asm = new ArrayList<String> ();
-    ArrayList<String> macro = new ArrayList<String> ();
-
-    //Variável indicando se deve guardar o código refente ao macro
-    boolean storeMacro = false;
-    String macroName = null;
-
-    //Leitura do arquivo asm
-    try {
-      File myObj = new File("teste_macro_z808.asm");
-      Scanner myReader = new Scanner(myObj);
-
-      while (myReader.hasNextLine()) {
-        String line = myReader.nextLine();
-
-        //Se tiver palavra MACRO, começa a salvar o código em macro
-        if(line.contains("MACRO")) {
-          storeMacro = true;
-          
-          //Remove o comentário
-          String[] aux = line.split(";");
-          line = aux[0];
-
-          //Salvando o nome da função Macro
-          aux = line.split(" ");
-          macroName = aux[0];
-        }
-
-        //Se chegar ao fim, muda a variável de controle de store do macro
-        if(line.contains("ENDM")) {
-          storeMacro = false;
-        }
-
-        //Enquanto variável for verdadeira, salva o código do Macro
-        if(storeMacro) {
-          macro.add(line);
-        }
-
-        if(macroName != null && line.contains(macroName)) {
-          macroReplace(line, macro);
-        }
-
-        asm.add(line);
-      }
-
-      myReader.close();
-
-    } catch (FileNotFoundException e) {
-        System.out.println("An error occurred.");
-        e.printStackTrace();
+    public Macro(String name, List<String> args, List<String> body) {
+        this.name = name;
+        this.args = args;
+        this.body = body;
     }
-  
-    //Criação e escrita de arquivo
-    try {
-      FileWriter myWriter = new FileWriter("filename.txt");
 
-      Iterator iterator = macro.iterator();
-      while(iterator.hasNext()) {
-        myWriter.write(iterator.next() + "\n");
-      }
-
-      myWriter.close();
-    } catch (IOException e) {
-        System.out.println("An error occurred.");
-        e.printStackTrace();
+    public String getName() {
+        return name;
     }
-  }
+
+    public String expand(List<String> params) {
+        if (args.size() != params.size()) {
+            throw new IllegalArgumentException("want a list of " + args.size());
+        }
+
+        var out = String.join("\n", body);
+
+        for (int i = 0; i < args.size(); i++) {
+            out = out.replaceAll(args.get(i), params.get(i));
+        }
+
+        return out;
+    }
 }
