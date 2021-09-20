@@ -21,10 +21,10 @@ public class MacroProcessor {
     private void processMacro() throws IOException {
         var lines = new ArrayList<String>();
 
-        var reader = getInputFileReader();
-        String line;
+        var reader = getInputReader();
         var macroBuilder = new MacroBuilder();
         var previousState = state;
+        String line;
 
         while ((line = reader.readLine()) != null) {
             previousState = state;
@@ -65,7 +65,7 @@ public class MacroProcessor {
         return state;
     }
 
-    private BufferedReader getInputFileReader() throws FileNotFoundException {
+    private BufferedReader getInputReader() throws FileNotFoundException {
         return new BufferedReader(new FileReader(inputFileName));
     }
 
