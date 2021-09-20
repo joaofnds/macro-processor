@@ -27,8 +27,6 @@ public class MacroProcessor {
         var previousState = state;
 
         while ((line = reader.readLine()) != null) {
-            line = removeSubsequentSpaces(line);
-
             previousState = state;
             state = newStateFromLine(line);
 
@@ -102,11 +100,6 @@ public class MacroProcessor {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList();
-    }
-
-
-    private String removeSubsequentSpaces(String str) {
-        return str.replaceAll("\\s+", " ");
     }
 
     private String expandMacro(String lineWithTheCall) {
