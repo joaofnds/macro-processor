@@ -69,9 +69,9 @@ public class MacroProcessor {
         return new BufferedReader(new FileReader(inputFileName));
     }
 
-    private void writeOutput(ArrayList<String> macro) throws IOException {
-        FileWriter fileWriter = new FileWriter(inputFileName);
-        for (String line : macro) {
+    private void writeOutput(ArrayList<String> programOut) throws IOException {
+        FileWriter fileWriter = new FileWriter("out" + inputFileName);
+        for (String line : programOut) {
             fileWriter.write(line + "\n");
         }
         fileWriter.close();
