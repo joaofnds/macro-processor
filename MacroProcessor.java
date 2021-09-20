@@ -6,7 +6,7 @@ import java.util.List;
 
 public class MacroProcessor {
     private final String inputFileName;
-    private final HashMap<String, Macro> macros = new HashMap<>();
+    private final HashMap<String, Macro> macroTable = new HashMap<>();
     private State state = State.NORMAL;
 
     public MacroProcessor(String inputFile) {
@@ -39,8 +39,7 @@ public class MacroProcessor {
                     break;
                 case NORMAL:
                     if (previousState == State.DEFINITION) {
-                        var macro = macroBuilder.build();
-                        macros.put(macro.getName(), macro);
+                        storeMacro(macroBuilder.build());
                     }
                     break;
                 case EXPANSION:
@@ -90,9 +89,13 @@ public class MacroProcessor {
             return false;
         }
 
-        var names = macros.values().stream().map(Macro::getName).toList();
+        var names = macroTable.values().stream().map(Macro::getName).toList();
         var firstToken = line.split(" ")[0];
         return names.contains(firstToken);
+    }
+
+    private void storeMacro(Macro macro) {
+        macroTable.put(macro.getName(), macro);
     }
 
     private List<String> parseMacroCall(String line) {
