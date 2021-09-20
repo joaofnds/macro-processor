@@ -85,13 +85,8 @@ public class MacroProcessor {
     }
 
     private boolean hasMacroCall(String line) {
-        if (!line.trim().contains(" ")) {
-            return false;
-        }
-
-        var names = macroTable.values().stream().map(Macro::getName).toList();
-        var firstToken = line.split(" ")[0];
-        return names.contains(firstToken);
+        var macroName = line.split(" ")[0];
+        return macroTable.containsKey(macroName);
     }
 
     private void storeMacro(Macro macro) {
