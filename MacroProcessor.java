@@ -106,11 +106,11 @@ public class MacroProcessor {
     }
 
     private String expandMacro(String lineWithTheCall) {
-        var nameAndParams = parseMacroCall(lineWithTheCall);
-        var name = nameAndParams.get(0);
-        var params = nameAndParams.subList(1, nameAndParams.size());
+        var nameAndArgs = parseMacroCall(lineWithTheCall);
+        var name = nameAndArgs.get(0);
+        var args = nameAndArgs.subList(1, nameAndArgs.size());
 
-        return macroTable.get(name).expand(params);
+        return macroTable.get(name).expand(args);
     }
 
     enum State {NORMAL, DEFINITION, EXPANSION}
