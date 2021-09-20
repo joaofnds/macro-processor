@@ -46,9 +46,7 @@ public class MacroProcessor {
                     }
                     break;
                 case EXPANSION:
-                    var tokens = parseMacroCall(line);
-                    var macro = macros.get(tokens.get(0));
-                    line = macro.expand(tokens.subList(1, tokens.size()));
+                    line = expandMacro(line);
                     state = State.NORMAL;
                     break;
             }
@@ -109,6 +107,14 @@ public class MacroProcessor {
 
     private String removeSubsequentSpaces(String str) {
         return str.replaceAll("\\s+", " ");
+    }
+
+    private String expandMacro(String lineWithTheCall) {
+        var nameAndParams = parseMacroCall(lineWithTheCall);
+        var name = nameAndParams.get(0);
+        var params = nameAndParams.subList(1, nameAndParams.size());
+
+        return macroTable.get(name).expand(params);
     }
 
     enum State {NORMAL, DEFINITION, EXPANSION}
