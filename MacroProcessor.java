@@ -14,8 +14,7 @@ public class MacroProcessor {
     }
 
     public static void main(String[] args) throws IOException {
-        var inputFile = args[0];
-        new MacroProcessor(inputFile).processMacro();
+        new MacroProcessor("program.asm").processMacro();
     }
 
     private void processMacro() throws IOException {
@@ -69,7 +68,7 @@ public class MacroProcessor {
     }
 
     private void writeOutput(ArrayList<String> programOut) throws IOException {
-        FileWriter fileWriter = new FileWriter("out" + inputFileName);
+        FileWriter fileWriter = new FileWriter(inputFileName);
         for (String line : programOut) {
             fileWriter.write(line + "\n");
         }
