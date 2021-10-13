@@ -8,24 +8,37 @@
 |      Bitwise inclusive OR
 */
 
+import utils.BitsetUtils;
+
 import java.io.IOException;
 import java.util.BitSet;
-import java.util.Stack;
+
+enum Flags {
+    CARRY(0),
+    PARITY(6),
+    INTERRUPT(7),
+    ZERO(8),
+    SIGN(9),
+    OVERFLOW(12);
+
+    private final int value;
+
+    Flags(int value) {
+        this.value = value;
+    }
+
+    public int getValue() {
+        return value;
+    }
+}
 
 public class Memory {
     private static final short MEM_SIZE = 2 << 12;
     private final short[] data = new short[MEM_SIZE];
     private final short si = 0;
-    private final short highMask = (short) 0xff00;
-    private final short lowMask = (short) 0x00ff;
+    private BitSet sr = new BitSet(16);
     private short sp = MEM_SIZE;
-    private boolean cf = false;
-    private boolean pf = false;
-    private boolean inf = false;
-    private boolean sf = false;
-    private boolean of = false;
     private short ip = 0;
-    private boolean zf = false;
     private short dx = 0;
     private short ax = 0;
 
@@ -33,16 +46,21 @@ public class Memory {
     }
 
     public static void main(String[] args) {
-        var mem = new Memory();
+        var bs = new BitSet(16);
+        var result = (short) 5;
+
+        for (int i = 0; i < bs.size(); i++) {
+            bs.set(i, ((result >> i) & 1) == 1);
+        }
+
+        System.out.println(bs);
     }
 
     private short operand(String register) {
-        switch (register) {
-            case "DX":
-                return dx;
-            default:
-                return ax;
+        if ("DX".equals(register)) {
+            return dx;
         }
+        return ax;
     }
 
     public void storeAx(short address) {
@@ -110,7 +128,7 @@ public class Memory {
 
     public void cmp(String reg) {
         var result = operand(reg);
-        zf = result == 0;
+        sr.set(Flags.ZERO.getValue(), result == 0);
     }
 
     public void cmp(short address) {
@@ -158,19 +176,19 @@ public class Memory {
     }
 
     public void jz(short address) {
-        if (zf) {
+        if (sr.get(Flags.ZERO.getValue())) {
             ip = address;
         }
     }
 
     public void jnz(short address) {
-        if (!zf) {
+        if (!sr.get(Flags.ZERO.getValue())) {
             ip = address;
         }
     }
 
     public void jp(short address) {
-        if (!sf) {
+        if (!sr.get(Flags.SIGN.getValue())) {
             ip = address;
         }
     }
@@ -204,38 +222,18 @@ public class Memory {
     }
 
     public void popf() {
-        var value = stackPop();
-
-        cf = getBit(value, 0);
-        pf = getBit(value, 6);
-        inf = getBit(value, 7);
-        zf = getBit(value, 8);
-        sf = getBit(value, 9);
-        of = getBit(value, 12);
+        sr = BitsetUtils.fromShort(stackPop());
     }
 
     public void push(String reg) {
         switch (reg) {
-            case "AX":
-                stackPush(ax);
-                break;
-            case "DX":
-                stackPush(dx);
-                break;
+            case "AX" -> stackPush(ax);
+            case "DX" -> stackPush(dx);
         }
     }
 
     public void pushf() {
-        var sr = new BitSet(16);
-
-        sr.set(12, of);
-        sr.set(9, sf);
-        sr.set(8, zf);
-        sr.set(7, inf);
-        sr.set(6, pf);
-        sr.set(0, cf);
-
-        stackPush(bitSetToShort(sr));
+        stackPush((short) BitsetUtils.toInt(sr));
     }
 
     private void write(short address) {
@@ -253,30 +251,12 @@ public class Memory {
         }
 
         sp += 1;
-        var stackValue = data[sp];
-        return stackValue;
+        return data[sp];
     }
 
     private void stackPush(short opd) {
         data[sp] = opd;
         sp -= 1;
-    }
-
-    private boolean getBit(int n, int k) {
-        var bitValue = (n >> k) & 1;
-        return bitValue == 1;
-    }
-
-    private short bitSetToShort(BitSet bs) {
-        var result = (short) 0;
-
-        for (int i = 0; i < bs.length(); i++) {
-            var bitValue = (short) (bs.get(i) ? 1 : 0);
-            result = (short) (result ^ bitValue);
-            result = (short) (result << 1);
-        }
-
-        return result;
     }
 
     private void assertValidAddress(short address) {
