@@ -7,33 +7,39 @@ Dados ENDS
 Codigo SEGMENT
 ASSUME CS: Codigo
 ASSUME DS: Dados
-SomaMem MACRO Mem1, Mem2 ;; Soma duas variáveis
-mov  AX,Mem1
-push AX
-mov  AX,Mem2
-mov  DX,AX
-pop  AX
-add  AX,DX
-mov  Mem1,AX
-ENDM
 
 Inicio:
 mov AX, Dados
-mov DS, AX
+mov DX, AX
 mov AX,2
 mov AX, DX
 mul DX
-;; chamada 1, argumentos: Var1, V
-SomaMem Var1,V
+mov  AX,Var1
+push AX
+mov  AX,Var2
+mov  DX,AX
+pop  AX
+add  AX,DX
+mov  Var1,AX
 
 mov AX, Var1
 add AX, DX
 mov Var2, AX
-;; chamada 2, argumentos: Var1, V
-SomaMem Var1, 3
+mov  AX,Var1
+push AX
+mov  AX,3
+mov  DX,AX
+pop  AX
+add  AX,DX
+mov  Var1,AX
 
-;; chamada 3, argumentos: Var1, Var3
-SomaMem Var1, Var3
+mov  AX,Var1
+push AX
+mov  AX,Var3
+mov  DX,AX
+pop  AX
+add  AX,DX
+mov  Var1,AX
 
 CODIGO ENDS
 END Inicio

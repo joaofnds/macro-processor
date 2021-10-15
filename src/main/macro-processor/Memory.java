@@ -34,10 +34,12 @@ enum Flags {
 
 public class Memory {
     private static final short MEM_SIZE = 2 << 12;
+    private static final String AX = "ax";
+    private static final String DX = "dx";
     private final short[] data = new short[MEM_SIZE];
     private final short si = 0;
     private BitSet sr = new BitSet(16);
-    private short sp = MEM_SIZE;
+    private short sp = MEM_SIZE - 1;
     private short ip = 0;
     private short dx = 0;
     private short ax = 0;
@@ -57,7 +59,7 @@ public class Memory {
     }
 
     private short operand(String register) {
-        if ("DX".equals(register)) {
+        if (DX.equals(register)) {
             return dx;
         }
         return ax;
@@ -93,7 +95,7 @@ public class Memory {
 
     public void add(short address) {
         dx = get(address);
-        add("DX");
+        add(DX);
     }
 
     public void divSi() {
@@ -113,7 +115,7 @@ public class Memory {
 
     public void sub(short address) {
         dx = get(address);
-        sub("DX");
+        sub(DX);
     }
 
     public void mul() {
@@ -133,7 +135,7 @@ public class Memory {
 
     public void cmp(short address) {
         dx = get(address);
-        cmp("DX");
+        cmp(DX);
     }
 
     public void not() {
@@ -147,7 +149,7 @@ public class Memory {
 
     public void or(short address) {
         dx = this.get(address);
-        or("DX");
+        or(DX);
     }
 
     public void xor(String reg) {
@@ -158,7 +160,7 @@ public class Memory {
 
     public void xor(short value) {
         dx = value;
-        xor("DX");
+        xor(DX);
     }
 
     public void and(String reg) {
@@ -168,7 +170,7 @@ public class Memory {
 
     public void and(short address) {
         dx = get(address);
-        and("DX");
+        and(DX);
     }
 
     public void jmp(short address) {
@@ -212,10 +214,10 @@ public class Memory {
 
     public void pop(String reg) {
         switch (reg) {
-            case "AX":
+            case AX:
                 ax = stackPop();
                 break;
-            case "DX":
+            case DX:
                 dx = stackPop();
                 break;
         }
@@ -227,8 +229,8 @@ public class Memory {
 
     public void push(String reg) {
         switch (reg) {
-            case "AX" -> stackPush(ax);
-            case "DX" -> stackPush(dx);
+            case AX -> stackPush(ax);
+            case DX -> stackPush(dx);
         }
     }
 

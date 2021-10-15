@@ -1,5 +1,4 @@
 import java.io.*;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,7 +17,7 @@ public class MacroProcessor {
         new MacroProcessor("src/main/resources/program.asm").processMacro();
     }
 
-    private void processMacro() throws IOException {
+    ArrayList<String> processMacro() throws IOException {
         var lines = new ArrayList<String>();
 
         var reader = getInputReader();
@@ -26,6 +25,7 @@ public class MacroProcessor {
         var previousState = state;
         String line;
 
+        loop:
         while ((line = reader.readLine()) != null) {
             previousState = state;
             state = newStateFromLine(line);
@@ -36,10 +36,11 @@ public class MacroProcessor {
                         macroBuilder = new MacroBuilder();
                     }
                     macroBuilder.parseLine(line);
-                    break;
+                    continue loop; // skip adding macro lines to output
                 case NORMAL:
                     if (previousState == State.DEFINITION) {
                         storeMacro(macroBuilder.build());
+                        continue loop; // skip adding macro lines to output
                     }
                     break;
                 case EXPANSION:
@@ -54,6 +55,8 @@ public class MacroProcessor {
         reader.close();
 
         writeOutput(lines);
+
+        return lines;
     }
 
     private State newStateFromLine(String line) {
