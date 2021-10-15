@@ -140,13 +140,13 @@ public class Program {
         var instructionString = line.split(" ")[0].trim();
 
         return switch (instructionString) {
-            case "add" -> Instruction.ADD;
-            case "sub" -> Instruction.SUB;
-            case "mul" -> Instruction.MUL;
-            case "mov" -> Instruction.MOV;
+            case "add"  -> Instruction.ADD;
+            case "sub"  -> Instruction.SUB;
+            case "mul"  -> Instruction.MUL;
+            case "mov"  -> Instruction.MOV;
             case "push" -> Instruction.PUSH;
-            case "pop" -> Instruction.POP;
-            default -> Instruction.UNKNOWN;
+            case "pop"  -> Instruction.POP;
+            default     -> Instruction.UNKNOWN;
         };
     }
 
