@@ -1,21 +1,34 @@
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
-
-enum State {NORMAL, SEGMENT}
-
-enum Instruction {ADD, SUB, PUSH, POP, MOV, MUL, UNKNOWN}
 
 public class Program {
     Memory memory = new Memory();
-    State state = State.NORMAL;
-    String lastSegmentStart = "";
+    HashMap<String, SymbolTableEntry> symbolTable = new HashMap<>();
+    Map<String, OpCode> directiveTable = Arrays.stream(
+            new OpCode[]{
+                    new OpCode("add", (byte) 0, OpCode.Type.RegisterRegister),
+                    new OpCode("sub", (byte) 1, OpCode.Type.RegisterRegister),
+                    new OpCode("push", (byte) 2, OpCode.Type.RegisterRegister),
+                    new OpCode("pop", (byte) 3, OpCode.Type.RegisterRegister),
+                    new OpCode("beq", (byte) 4, OpCode.Type.RegisterRegister),
+                    new OpCode("bne", (byte) 5, OpCode.Type.RegisterRegister),
+                    new OpCode("jmp", (byte) 6, OpCode.Type.RegisterRegister),
+            }
+    ).collect(Collectors.toMap(o -> o.mnemonic, o -> o));
+    short locationCounter = 0; // LC
+    HashMap<String, Short> knownRegisters = new HashMap<>() {{
+        put("ax", (short) 0b11110000);
+        put("dx", (short) 0b11110001);
+    }};
+    List<Op> ops = new ArrayList<>();
 
     public Program(String inputFile) throws IOException {
         var program = expandMacro(inputFile);
-        clean(program).forEach(this::execute);
+        var lines = clean(program).stream().map(ParsedLine::fromLine).collect(Collectors.toList());
+
+        firstPass(lines);
+        secondPass(lines);
     }
 
     public static void main(String[] args) throws IOException {
@@ -23,89 +36,157 @@ public class Program {
         new Program(inputFile);
     }
 
+    private void firstPass(List<ParsedLine> lines) {
+        locationCounter = 0;
+
+        for (var line : lines) {
+            // ensure symbols
+            if (line.hasLabel()) defineLabel(line.label);
+
+            if (!isKnowndOp(line.instruction) && isKnownSymbol(line.instruction))
+                defineAndLink(symbolTable.get(line.instruction), Short.parseShort(line.args.get(0)));
+
+            line.args.forEach(symbol -> {
+                if (isNumeric(symbol)) return;
+                if (isKnownRegister(symbol)) return;
+                if (symbolTable.containsKey(symbol)) return;
+
+                symbolTable.put(symbol, new SymbolTableEntry(symbol));
+            });
+
+            // store op
+            if (!isKnowndOp(line.instruction)) return;
+
+            var op = new Op();
+            op.op = line.instruction;
+
+            for (var arg : line.args) {
+                if (symbolTable.containsKey(arg)) {
+                    op.args.add(symbolTable.get(arg).getValue());
+                } else if (isKnownRegister(arg)) {
+                    op.args.add(knownRegisters.get(arg));
+                } else if (isNumeric(arg)) {
+                    op.args.add(Short.parseShort(arg));
+                }
+            }
+
+            ops.add(op);
+
+            line.args.forEach(symbol -> {
+                if (isNumeric(symbol)) return;
+                if (isKnownRegister(symbol)) return;
+                if (!symbolTable.containsKey(symbol)) return;
+
+                var s = symbolTable.get(symbol);
+                if (s.isUndefined()) {
+                    s.setValue(locationCounter);
+                }
+            });
+
+            locationCounter++;
+        }
+    }
+
+    private void secondPass(List<ParsedLine> lines) {
+        locationCounter = 0;
+        for (var line : lines) {
+//            execute(line);
+            locationCounter++;
+        }
+    }
+
     private ArrayList<String> expandMacro(String inputFile) throws IOException {
         return new MacroProcessor(inputFile).processMacro();
     }
 
-    private void execute(String line) {
-        if (shouldSkip(line)) {
+    private void defineLabel(String name) {
+        if (symbolTable.containsKey(name)) {
+            symbolTable.get(name).setMultiplyDefined();
             return;
         }
-        executeNormal(line);
-//        switch (state) {
-//            case NORMAL -> executeNormal(line);
-//            case SEGMENT -> executeSegment(line);
+
+        var entry = new SymbolTableEntry(name);
+        symbolTable.put(name, entry);
+    }
+
+    private void defineAndLink(SymbolTableEntry symbol) {
+        short value = symbolTable.
+        short lastRef = symbol.getValue();
+        for (short i = lastRef; i >= 0; i--) {
+            if (i != lastRef) break;
+
+            var op = ops.get(i);
+
+            lastRef = op.args.get(0);
+            op.args.set(0, value);
+        }
+
+        symbol.setDefined();
+        symbol.setValue(value);
+    }
+
+    private boolean isKnowndOp(String op) {
+        return directiveTable.containsKey(op);
+    }
+
+    private boolean isKnownSymbol(String symbol) {
+        return symbolTable.containsKey(symbol);
+    }
+
+    private boolean isKnownRegister(String name) {
+        return knownRegisters.containsKey(name);
+    }
+
+    private boolean isNumeric(String str) {
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+//    private void add(List<String> args) {
+//        var reg = args.get(0);
+//        memory.add(reg);
+//    }
+//
+//    private void sub(List<String> args) {
+//        var reg = args.get(0);
+//        memory.sub(reg);
+//    }
+//
+//    private void push(List<String> args) {
+//        var reg = args.get(0);
+//        memory.push(reg);
+//    }
+//
+//    private void pop(List<String> args) {
+//        var reg = args.get(0);
+//        memory.pop(reg);
+//    }
+//
+//    private void mov(List<String> args) {
+//        var to = args.get(0);
+//        var from = args.get(1); // TODO translate to address
+//        switch (to) {
+//            case "ax" -> memory.storeAx((short) 0);
+//            case "dx" -> memory.storeDx((short) 1);
+//            default -> {
+//                throw new Error("invalid register: " + to);
+//            }
 //        }
-    }
-
-    private void executeNormal(String line) {
-        var instruction = instruction(line);
-        var args = args(line);
-
-        switch (instruction) {
-            case ADD  -> add(args);
-            case SUB  -> sub(args);
-            case PUSH -> push(args);
-            case POP  -> pop(args);
-            case MOV  -> mov(args);
-            case MUL  -> mul();
-            case UNKNOWN -> System.out.println("unknown instruction: " + line);
-        }
-
-//        if (isSegmentStart(line)) {
-//            state = State.SEGMENT;
-//            lastSegmentStart = instruction(line);
-//        }
-    }
-
-    private void add(List<String> args) {
-        var reg = args.get(0);
-        memory.add(reg);
-    }
-
-    private void sub(List<String> args) {
-        var reg = args.get(0);
-        memory.sub(reg);
-    }
-
-    private void push(List<String> args) {
-        var reg = args.get(0);
-        memory.push(reg);
-    }
-
-    private void pop(List<String> args) {
-        var reg = args.get(0);
-        memory.pop(reg);
-    }
-
-    private void mov(List<String> args) {
-        var to = args.get(0);
-        var from = args.get(1); // TODO translate to address
-        switch (to) {
-            case "ax" -> memory.storeAx((short) 0);
-            case "dx" -> memory.storeDx((short) 1);
-            default -> {
-                throw new Error("invalid register: " + to);
-            }
-        }
-    }
-
-    private void mul() {
-        memory.mul();
-    }
-
-    private void executeSegment(String line) {
-        if (isSegmentEnd(line)) {
-            lastSegmentStart = "";
-            state = State.NORMAL;
-        }
-    }
+//    }
+//
+//    private void mul() {
+//        memory.mul();
+//    }
 
     private ArrayList<String> clean(ArrayList<String> program) {
         var result = new ArrayList<String>();
 
         for (String line : program) {
-            line = line.split(";")[0].trim().toLowerCase();
+            line = line.trim().toLowerCase();
             if (line.isEmpty()) continue;
 
             line = line.replaceAll("\s+", " ");
@@ -116,45 +197,13 @@ public class Program {
         return result;
     }
 
-    private boolean isSegmentStart(String line) {
-        return line.toLowerCase().endsWith("segment");
-    }
+    class Op {
+        String op;
+        ArrayList<Short> args = new ArrayList<>();
 
-    private boolean isSegmentEnd(String line) {
-        return line.endsWith("ends") && line.startsWith(lastSegmentStart);
-    }
-
-    private boolean isLabel(String line) {
-        return line.endsWith(":");
-    }
-
-    private boolean isLabelEnd(String line) {
-        return line.toLowerCase().startsWith("end ");
-    }
-
-    private boolean shouldSkip(String line) {
-        return isSegmentStart(line) || isSegmentEnd(line) || isLabel(line) || isLabelEnd(line) || line.startsWith("assume");
-    }
-
-    private Instruction instruction(String line) {
-        var instructionString = line.split(" ")[0].trim();
-
-        return switch (instructionString) {
-            case "add"  -> Instruction.ADD;
-            case "sub"  -> Instruction.SUB;
-            case "mul"  -> Instruction.MUL;
-            case "mov"  -> Instruction.MOV;
-            case "push" -> Instruction.PUSH;
-            case "pop"  -> Instruction.POP;
-            default     -> Instruction.UNKNOWN;
-        };
-    }
-
-    private List<String> args(String line) {
-        var argString = line.split(" ")[1];
-
-        return Arrays.stream(argString.split(","))
-                .map(String::trim)
-                .collect(Collectors.toList());
+        @Override
+        public String toString() {
+            return op + ": " + args.get(0);
+        }
     }
 }
