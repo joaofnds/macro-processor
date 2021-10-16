@@ -4,7 +4,7 @@ import java.util.stream.Collectors;
 
 public class Program {
     Memory memory = new Memory();
-    HashMap<String, SymbolTableEntry> symbolTable = new HashMap<>();
+    ArrayList<SymbolTableEntry> symbolTable = new ArrayList<>();
     Map<String, OpCode> directiveTable = Arrays.stream(
             new OpCode[]{
                     new OpCode("add", (byte) 0, OpCode.Type.RegisterRegister),
@@ -43,26 +43,36 @@ public class Program {
             // ensure symbols
             if (line.hasLabel()) defineLabel(line.label);
 
-            if (!isKnowndOp(line.instruction) && isKnownSymbol(line.instruction))
-                defineAndLink(symbolTable.get(line.instruction), Short.parseShort(line.args.get(0)));
+            if (isDefiningASymbol(line)) {
+                var symbol = getSymbol(line.instruction);
+                var value = Short.parseShort(line.args.get(0));
+
+                if (symbol == null) {
+                    symbol = new SymbolTableEntry(line.instruction);
+                    symbol.setValue(value);
+                    putSymbol(symbol);
+                } else {
+                    defineAndLink(symbol, value);
+                }
+            }
 
             line.args.forEach(symbol -> {
                 if (isNumeric(symbol)) return;
                 if (isKnownRegister(symbol)) return;
-                if (symbolTable.containsKey(symbol)) return;
+                if (hasSymbol(symbol)) return;
 
-                symbolTable.put(symbol, new SymbolTableEntry(symbol));
+                putSymbol(new SymbolTableEntry(symbol));
             });
 
             // store op
-            if (!isKnowndOp(line.instruction)) return;
+            if (!isKnowndOp(line.instruction)) continue;
 
             var op = new Op();
             op.op = line.instruction;
 
             for (var arg : line.args) {
-                if (symbolTable.containsKey(arg)) {
-                    op.args.add(symbolTable.get(arg).getValue());
+                if (hasSymbol(arg)) {
+                    op.args.add(getSymbol(arg).getValue());
                 } else if (isKnownRegister(arg)) {
                     op.args.add(knownRegisters.get(arg));
                 } else if (isNumeric(arg)) {
@@ -75,9 +85,9 @@ public class Program {
             line.args.forEach(symbol -> {
                 if (isNumeric(symbol)) return;
                 if (isKnownRegister(symbol)) return;
-                if (!symbolTable.containsKey(symbol)) return;
+                if (!hasSymbol(symbol)) return;
 
-                var s = symbolTable.get(symbol);
+                var s = getSymbol(symbol);
                 if (s.isUndefined()) {
                     s.setValue(locationCounter);
                 }
@@ -85,6 +95,38 @@ public class Program {
 
             locationCounter++;
         }
+    }
+
+    private boolean isDefiningASymbol(ParsedLine line) {
+        return !isKnowndOp(line.instruction);
+    }
+
+    private boolean hasSymbol(String symbol) {
+        for (var entry : symbolTable) {
+            if (entry.name.equals(symbol)) return true;
+        }
+
+        return false;
+    }
+
+    private SymbolTableEntry getSymbol(String symbol) {
+        for (var s : symbolTable) {
+            if (s.name.equals(symbol)) return s;
+        }
+
+        return null;
+    }
+
+    private short symbolOffset(SymbolTableEntry symbol) {
+        for (short i = 0; i < symbolTable.size(); i++) {
+            if (symbolTable.get(i) == symbol) return i;
+        }
+
+        return -1;
+    }
+
+    private void putSymbol(SymbolTableEntry s) {
+        symbolTable.add(s);
     }
 
     private void secondPass(List<ParsedLine> lines) {
@@ -100,17 +142,17 @@ public class Program {
     }
 
     private void defineLabel(String name) {
-        if (symbolTable.containsKey(name)) {
-            symbolTable.get(name).setMultiplyDefined();
+        if (hasSymbol(name)) {
+            getSymbol(name).setMultiplyDefined();
             return;
         }
 
         var entry = new SymbolTableEntry(name);
-        symbolTable.put(name, entry);
+        putSymbol(entry);
     }
 
-    private void defineAndLink(SymbolTableEntry symbol) {
-        short value = symbolTable.
+    private void defineAndLink(SymbolTableEntry symbol, short definingValue) {
+        short offset = symbolOffset(symbol);
         short lastRef = symbol.getValue();
         for (short i = lastRef; i >= 0; i--) {
             if (i != lastRef) break;
@@ -118,19 +160,15 @@ public class Program {
             var op = ops.get(i);
 
             lastRef = op.args.get(0);
-            op.args.set(0, value);
+            op.args.set(0, offset);
         }
 
         symbol.setDefined();
-        symbol.setValue(value);
+        symbol.setValue(definingValue);
     }
 
     private boolean isKnowndOp(String op) {
         return directiveTable.containsKey(op);
-    }
-
-    private boolean isKnownSymbol(String symbol) {
-        return symbolTable.containsKey(symbol);
     }
 
     private boolean isKnownRegister(String name) {
