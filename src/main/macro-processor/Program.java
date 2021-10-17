@@ -48,9 +48,7 @@ public class Program {
                 var value = Short.parseShort(line.args.get(0));
 
                 if (symbol == null) {
-                    symbol = new SymbolTableEntry(line.instruction);
-                    symbol.setValue(value);
-                    putSymbol(symbol);
+                    putSymbol(new SymbolTableEntry(line.instruction, value));
                 } else {
                     defineAndLink(symbol, value);
                 }

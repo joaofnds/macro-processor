@@ -5,7 +5,12 @@ class SymbolTableEntry {
 
     public SymbolTableEntry(String name) {
         this.name = name;
-        value = 0;
+        this.value = value;
+    }
+
+    public SymbolTableEntry(String name, short value) {
+        this.name = name;
+        this.value = value;
     }
 
     public short getValue() {
