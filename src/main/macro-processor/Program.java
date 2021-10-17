@@ -43,7 +43,7 @@ public class Program {
             storeLineSymbols(line);
 
             // store op
-            if (!isKnowndOp(line.instruction)) continue;
+            if (isDefiningASymbol(line)) continue;
 
             var op = new Op();
             op.op = line.instruction;
@@ -60,17 +60,21 @@ public class Program {
 
             ops.add(op);
 
-            line.args.forEach(symbol -> {
-                if (!shouldUpdateArgSymbol(symbol)) return;
-
-                var s = getSymbol(symbol);
-                if (s.isUndefined()) {
-                    s.setValue(locationCounter);
-                }
-            });
+            updateArgSymbols(line);
 
             locationCounter++;
         }
+    }
+
+    private void updateArgSymbols(ParsedLine line) {
+        if (!isKnowndOp(line.instruction)) return;
+
+        line.args.forEach(symbol -> {
+            if (!shouldUpdateArgSymbol(symbol)) return;
+
+            var s = getSymbol(symbol);
+            if (s.isUndefined()) s.setValue(locationCounter);
+        });
     }
 
     private void storeLineSymbols(ParsedLine line) {
