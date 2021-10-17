@@ -40,23 +40,7 @@ public class Program {
         locationCounter = 0;
 
         for (var line : lines) {
-            // ensure symbols
-            if (line.hasLabel()) defineLabel(line.label);
-
-            if (isDefiningASymbol(line)) {
-                var symbol = getSymbol(line.instruction);
-                var value = Short.parseShort(line.args.get(0));
-
-                if (symbol == null) {
-                    putSymbol(new SymbolTableEntry(line.instruction, value));
-                } else {
-                    defineAndLink(symbol, value);
-                }
-            }
-
-            line.args.forEach(symbol -> {
-                if (shouldStoreArgSymbol(symbol)) putSymbol(new SymbolTableEntry(symbol));
-            });
+            storeLineSymbols(line);
 
             // store op
             if (!isKnowndOp(line.instruction)) continue;
@@ -87,6 +71,25 @@ public class Program {
 
             locationCounter++;
         }
+    }
+
+    private void storeLineSymbols(ParsedLine line) {
+        if (line.hasLabel()) defineLabel(line.label);
+
+        if (isDefiningASymbol(line)) {
+            var symbol = getSymbol(line.instruction);
+            var value = Short.parseShort(line.args.get(0));
+
+            if (symbol == null) {
+                putSymbol(new SymbolTableEntry(line.instruction, value));
+            } else {
+                defineAndLink(symbol, value);
+            }
+        }
+
+        line.args.forEach(symbol -> {
+            if (shouldStoreArgSymbol(symbol)) putSymbol(new SymbolTableEntry(symbol));
+        });
     }
 
     private boolean shouldStoreArgSymbol(String symbol) {
