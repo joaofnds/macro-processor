@@ -55,11 +55,7 @@ public class Program {
             }
 
             line.args.forEach(symbol -> {
-                if (isNumeric(symbol)) return;
-                if (isKnownRegister(symbol)) return;
-                if (hasSymbol(symbol)) return;
-
-                putSymbol(new SymbolTableEntry(symbol));
+                if (shouldStoreArgSymbol(symbol)) putSymbol(new SymbolTableEntry(symbol));
             });
 
             // store op
@@ -81,9 +77,7 @@ public class Program {
             ops.add(op);
 
             line.args.forEach(symbol -> {
-                if (isNumeric(symbol)) return;
-                if (isKnownRegister(symbol)) return;
-                if (!hasSymbol(symbol)) return;
+                if (!shouldUpdateArgSymbol(symbol)) return;
 
                 var s = getSymbol(symbol);
                 if (s.isUndefined()) {
@@ -93,6 +87,18 @@ public class Program {
 
             locationCounter++;
         }
+    }
+
+    private boolean shouldStoreArgSymbol(String symbol) {
+        return isSymbol(symbol) && !hasSymbol(symbol);
+    }
+
+    private boolean shouldUpdateArgSymbol(String symbol) {
+        return isSymbol(symbol) && hasSymbol(symbol);
+    }
+
+    private boolean isSymbol(String contender) {
+        return !isNumeric(contender) && !isKnownRegister(contender);
     }
 
     private boolean isDefiningASymbol(ParsedLine line) {
