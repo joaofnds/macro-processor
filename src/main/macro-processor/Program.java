@@ -41,34 +41,34 @@ public class Program {
 
         for (var line : lines) {
             storeLineSymbols(line);
-
-            // store op
+           
             if (isDefiningASymbol(line)) continue;
 
-            var op = new Op();
-            op.op = line.instruction;
-
-            for (var arg : line.args) {
-                if (hasSymbol(arg)) {
-                    op.args.add(getSymbol(arg).getValue());
-                } else if (isKnownRegister(arg)) {
-                    op.args.add(knownRegisters.get(arg));
-                } else if (isNumeric(arg)) {
-                    op.args.add(Short.parseShort(arg));
-                }
-            }
-
-            ops.add(op);
-
+            storeOp(line);
             updateArgSymbols(line);
 
             locationCounter++;
         }
     }
 
-    private void updateArgSymbols(ParsedLine line) {
-        if (!isKnowndOp(line.instruction)) return;
+    private void storeOp(ParsedLine line) {
+        var op = new Op();
+        op.op = line.instruction;
 
+        for (var arg : line.args) {
+            if (hasSymbol(arg)) {
+                op.args.add(getSymbol(arg).getValue());
+            } else if (isKnownRegister(arg)) {
+                op.args.add(knownRegisters.get(arg));
+            } else if (isNumeric(arg)) {
+                op.args.add(Short.parseShort(arg));
+            }
+        }
+
+        ops.add(op);
+    }
+
+    private void updateArgSymbols(ParsedLine line) {
         line.args.forEach(symbol -> {
             if (!shouldUpdateArgSymbol(symbol)) return;
 
