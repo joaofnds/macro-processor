@@ -12,5 +12,6 @@ class OpCode {
     enum Type {
         RegisterRegister, // RR
         RegisterIndex, // RX
+        RegisterImmediate, // RI
     }
 }

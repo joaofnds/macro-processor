@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 public class Program {
     Memory memory = new Memory();
     ArrayList<SymbolTableEntry> symbolTable = new ArrayList<>();
+
     Map<String, OpCode> directiveTable = Arrays.stream(
             new OpCode[]{
                     new OpCode("add", (byte) 0, OpCode.Type.RegisterRegister),
@@ -13,15 +14,45 @@ public class Program {
                     new OpCode("pop", (byte) 3, OpCode.Type.RegisterRegister),
                     new OpCode("beq", (byte) 4, OpCode.Type.RegisterRegister),
                     new OpCode("bne", (byte) 5, OpCode.Type.RegisterRegister),
-                    new OpCode("jmp", (byte) 6, OpCode.Type.RegisterRegister),
+                    new OpCode("jmp", (byte) 6, OpCode.Type.RegisterIndex),
+                    new OpCode("addrr", (byte) 0, OpCode.Type.RegisterRegister),
+                    new OpCode("addrx", (byte) 1, OpCode.Type.RegisterIndex),
+                    new OpCode("div", (byte) 2, OpCode.Type.RegisterRegister),
+                    new OpCode("subrr", (byte) 3, OpCode.Type.RegisterRegister),
+                    new OpCode("subrx", (byte) 4, OpCode.Type.RegisterIndex),
+                    new OpCode("mul", (byte) 5, OpCode.Type.RegisterRegister),
+                    new OpCode("cmprr", (byte) 6, OpCode.Type.RegisterRegister),
+                    new OpCode("cmprx", (byte) 7, OpCode.Type.RegisterIndex),
+                    new OpCode("andrr", (byte) 8, OpCode.Type.RegisterRegister),
+                    new OpCode("andrx", (byte) 9, OpCode.Type.RegisterIndex),
+                    new OpCode("not", (byte) 10, OpCode.Type.RegisterIndex),
+                    new OpCode("orrr", (byte) 11, OpCode.Type.RegisterRegister),
+                    new OpCode("orrx", (byte) 12, OpCode.Type.RegisterIndex),
+                    new OpCode("xorrr", (byte) 13, OpCode.Type.RegisterRegister),
+                    new OpCode("xorri", (byte) 14, OpCode.Type.RegisterImmediate),
+                    new OpCode("jz", (byte) 16, OpCode.Type.RegisterIndex),
+                    new OpCode("jnz", (byte) 17, OpCode.Type.RegisterIndex),
+                    new OpCode("jp", (byte) 18, OpCode.Type.RegisterIndex),
+                    new OpCode("call", (byte) 19, OpCode.Type.RegisterIndex),
+                    new OpCode("ret", (byte) 20, OpCode.Type.RegisterRegister),
+                    new OpCode("hlt", (byte) 21, OpCode.Type.RegisterRegister),
+                    new OpCode("poprr", (byte) 22, OpCode.Type.RegisterRegister),
+                    new OpCode("poprx", (byte) 23, OpCode.Type.RegisterIndex),
+                    new OpCode("popf", (byte) 24, OpCode.Type.RegisterRegister),
+                    new OpCode("pushf", (byte) 26, OpCode.Type.RegisterRegister),
+                    new OpCode("store", (byte) 27, OpCode.Type.RegisterRegister),
+                    new OpCode("read", (byte) 28, OpCode.Type.RegisterIndex),
+                    new OpCode("write", (byte) 29, OpCode.Type.RegisterIndex)
             }
     ).collect(Collectors.toMap(o -> o.mnemonic, o -> o));
-    short locationCounter = 0; // LC
-    HashMap<String, Short> knownRegisters = new HashMap<>() {{
+
+    HashMap<String, Short> registers = new HashMap<>() {{
         put("ax", (short) 0b11110000);
         put("dx", (short) 0b11110001);
     }};
     List<Op> ops = new ArrayList<>();
+
+    short locationCounter = 0; // LC
 
     public Program(String inputFile) throws IOException {
         var program = expandMacro(inputFile);
@@ -41,7 +72,7 @@ public class Program {
 
         for (var line : lines) {
             storeLineSymbols(line);
-           
+
             if (isDefiningASymbol(line)) continue;
 
             storeOp(line);
@@ -59,7 +90,7 @@ public class Program {
             if (hasSymbol(arg)) {
                 op.args.add(getSymbol(arg).getValue());
             } else if (isKnownRegister(arg)) {
-                op.args.add(knownRegisters.get(arg));
+                op.args.add(registers.get(arg));
             } else if (isNumeric(arg)) {
                 op.args.add(Short.parseShort(arg));
             }
@@ -183,7 +214,7 @@ public class Program {
     }
 
     private boolean isKnownRegister(String name) {
-        return knownRegisters.containsKey(name);
+        return registers.containsKey(name);
     }
 
     private boolean isNumeric(String str) {
