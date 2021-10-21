@@ -11,9 +11,7 @@
 import utils.BitsetUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.HashMap;
 
 enum Flags {
     CARRY(0),

@@ -1,56 +1,65 @@
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Collectors;
 
+import static utils.NumberUtils.isNumeric;
+
 public class Program {
+    static final OpCode ADDRR = new OpCode("add", (byte) 0, OpCode.Type.RegisterRegister);
+    static final OpCode ADDRX = new OpCode("add", (byte) 1, OpCode.Type.RegisterIndex);
+    static final OpCode ANDRR = new OpCode("and", (byte) 8, OpCode.Type.RegisterRegister);
+    static final OpCode ANDRX = new OpCode("and", (byte) 9, OpCode.Type.RegisterIndex);
+    static final OpCode BEQRR = new OpCode("beq", (byte) 4, OpCode.Type.RegisterRegister);
+    static final OpCode BEQRI = new OpCode("beq", (byte) 4, OpCode.Type.RegisterIndex);
+    static final OpCode BNERR = new OpCode("bne", (byte) 5, OpCode.Type.RegisterRegister);
+    static final OpCode BNERI = new OpCode("bne", (byte) 5, OpCode.Type.RegisterIndex);
+    static final OpCode CALL = new OpCode("call", (byte) 19, OpCode.Type.RegisterIndex);
+    static final OpCode CMPRR = new OpCode("cmp", (byte) 6, OpCode.Type.RegisterRegister);
+    static final OpCode CMPRX = new OpCode("cmp", (byte) 7, OpCode.Type.RegisterIndex);
+    static final OpCode DIV = new OpCode("div", (byte) 2, OpCode.Type.RegisterRegister);
+    static final OpCode HLT = new OpCode("hlt", (byte) 21, OpCode.Type.RegisterRegister);
+    static final OpCode JMPRR = new OpCode("jmp", (byte) 6, OpCode.Type.RegisterRegister);
+    static final OpCode JMPRI = new OpCode("jmp", (byte) 6, OpCode.Type.RegisterIndex);
+    static final OpCode JNZ = new OpCode("jnz", (byte) 17, OpCode.Type.RegisterIndex);
+    static final OpCode JP = new OpCode("jp", (byte) 18, OpCode.Type.RegisterIndex);
+    static final OpCode JZ = new OpCode("jz", (byte) 16, OpCode.Type.RegisterIndex);
+    static final OpCode MUL = new OpCode("mul", (byte) 5, OpCode.Type.RegisterRegister);
+    static final OpCode NOT = new OpCode("not", (byte) 10, OpCode.Type.RegisterIndex);
+    static final OpCode ORRR = new OpCode("or", (byte) 11, OpCode.Type.RegisterRegister);
+    static final OpCode ORRX = new OpCode("or", (byte) 12, OpCode.Type.RegisterIndex);
+    static final OpCode POP = new OpCode("pop", (byte) 3, OpCode.Type.RegisterRegister);
+    static final OpCode POPF = new OpCode("popf", (byte) 24, OpCode.Type.RegisterRegister);
+    static final OpCode POPRR = new OpCode("pop", (byte) 22, OpCode.Type.RegisterRegister);
+    static final OpCode POPRX = new OpCode("pop", (byte) 23, OpCode.Type.RegisterIndex);
+    static final OpCode PUSH = new OpCode("push", (byte) 2, OpCode.Type.RegisterRegister);
+    static final OpCode PUSHF = new OpCode("pushf", (byte) 26, OpCode.Type.RegisterRegister);
+    static final OpCode READ = new OpCode("read", (byte) 28, OpCode.Type.RegisterIndex);
+    static final OpCode RET = new OpCode("ret", (byte) 20, OpCode.Type.RegisterRegister);
+    static final OpCode STORE = new OpCode("store", (byte) 27, OpCode.Type.RegisterRegister);
+    static final OpCode SUB = new OpCode("sub", (byte) 1, OpCode.Type.RegisterRegister);
+    static final OpCode SUBRR = new OpCode("sub", (byte) 3, OpCode.Type.RegisterRegister);
+    static final OpCode SUBRX = new OpCode("sub", (byte) 4, OpCode.Type.RegisterIndex);
+    static final OpCode WRITE = new OpCode("write", (byte) 29, OpCode.Type.RegisterIndex);
+    static final OpCode XORRI = new OpCode("xor", (byte) 14, OpCode.Type.RegisterImmediate);
+    static final OpCode XORRR = new OpCode("xor", (byte) 13, OpCode.Type.RegisterRegister);
+
+    private final OpCode[] directives = {
+            ADDRR, ADDRX, ANDRR, ANDRX, BEQRR, BEQRI, BNERR, BNERI, CALL, CMPRR, CMPRX, DIV,
+            HLT, JMPRR, JMPRI, JNZ, JP, JZ, MUL, NOT, ORRR, ORRX, POP, POPF, POPRR, POPRX,
+            PUSH, PUSHF, READ, RET, STORE, SUB, SUBRR, SUBRX, WRITE, XORRI, XORRR,
+    };
+
     Memory memory = new Memory();
     ArrayList<SymbolTableEntry> symbolTable = new ArrayList<>();
-
-    Map<String, OpCode> directiveTable = Arrays.stream(
-            new OpCode[]{
-                    new OpCode("add", (byte) 0, OpCode.Type.RegisterRegister),
-                    new OpCode("sub", (byte) 1, OpCode.Type.RegisterRegister),
-                    new OpCode("push", (byte) 2, OpCode.Type.RegisterRegister),
-                    new OpCode("pop", (byte) 3, OpCode.Type.RegisterRegister),
-                    new OpCode("beq", (byte) 4, OpCode.Type.RegisterRegister),
-                    new OpCode("bne", (byte) 5, OpCode.Type.RegisterRegister),
-                    new OpCode("jmp", (byte) 6, OpCode.Type.RegisterIndex),
-                    new OpCode("addrr", (byte) 0, OpCode.Type.RegisterRegister),
-                    new OpCode("addrx", (byte) 1, OpCode.Type.RegisterIndex),
-                    new OpCode("div", (byte) 2, OpCode.Type.RegisterRegister),
-                    new OpCode("subrr", (byte) 3, OpCode.Type.RegisterRegister),
-                    new OpCode("subrx", (byte) 4, OpCode.Type.RegisterIndex),
-                    new OpCode("mul", (byte) 5, OpCode.Type.RegisterRegister),
-                    new OpCode("cmprr", (byte) 6, OpCode.Type.RegisterRegister),
-                    new OpCode("cmprx", (byte) 7, OpCode.Type.RegisterIndex),
-                    new OpCode("andrr", (byte) 8, OpCode.Type.RegisterRegister),
-                    new OpCode("andrx", (byte) 9, OpCode.Type.RegisterIndex),
-                    new OpCode("not", (byte) 10, OpCode.Type.RegisterIndex),
-                    new OpCode("orrr", (byte) 11, OpCode.Type.RegisterRegister),
-                    new OpCode("orrx", (byte) 12, OpCode.Type.RegisterIndex),
-                    new OpCode("xorrr", (byte) 13, OpCode.Type.RegisterRegister),
-                    new OpCode("xorri", (byte) 14, OpCode.Type.RegisterImmediate),
-                    new OpCode("jz", (byte) 16, OpCode.Type.RegisterIndex),
-                    new OpCode("jnz", (byte) 17, OpCode.Type.RegisterIndex),
-                    new OpCode("jp", (byte) 18, OpCode.Type.RegisterIndex),
-                    new OpCode("call", (byte) 19, OpCode.Type.RegisterIndex),
-                    new OpCode("ret", (byte) 20, OpCode.Type.RegisterRegister),
-                    new OpCode("hlt", (byte) 21, OpCode.Type.RegisterRegister),
-                    new OpCode("poprr", (byte) 22, OpCode.Type.RegisterRegister),
-                    new OpCode("poprx", (byte) 23, OpCode.Type.RegisterIndex),
-                    new OpCode("popf", (byte) 24, OpCode.Type.RegisterRegister),
-                    new OpCode("pushf", (byte) 26, OpCode.Type.RegisterRegister),
-                    new OpCode("store", (byte) 27, OpCode.Type.RegisterRegister),
-                    new OpCode("read", (byte) 28, OpCode.Type.RegisterIndex),
-                    new OpCode("write", (byte) 29, OpCode.Type.RegisterIndex)
-            }
-    ).collect(Collectors.toMap(o -> o.mnemonic, o -> o));
 
     HashMap<String, Short> registers = new HashMap<>() {{
         put("ax", (short) 0b11110000);
         put("dx", (short) 0b11110001);
     }};
-    List<Op> ops = new ArrayList<>();
+    List<Instruction> instructions = new ArrayList<>();
 
     short locationCounter = 0; // LC
 
@@ -59,7 +68,7 @@ public class Program {
         var lines = clean(program).stream().map(ParsedLine::fromLine).collect(Collectors.toList());
 
         firstPass(lines);
-        secondPass(lines);
+        secondPass(instructions);
     }
 
     public static void main(String[] args) throws IOException {
@@ -83,21 +92,33 @@ public class Program {
     }
 
     private void storeOp(ParsedLine line) {
-        var op = new Op();
+        var op = new Instruction();
         op.op = line.instruction;
+        op.type = opType(line.args.get(0));
 
-        for (var arg : line.args) {
-            if (hasSymbol(arg)) {
-                op.args.add(getSymbol(arg).getValue());
-            } else if (isKnownRegister(arg)) {
-                op.args.add(registers.get(arg));
-            } else if (isNumeric(arg)) {
-                op.args.add(Short.parseShort(arg));
-            }
-        }
+        line.args.forEach(arg -> op.args.add(parseArg(arg)));
 
-        ops.add(op);
+        instructions.add(op);
     }
+
+    private short parseArg(String arg) {
+        return switch (opType(arg)) {
+            case RegisterRegister -> registers.get(arg);
+            case RegisterIndex -> getSymbol(arg).getValue();
+            case RegisterImmediate -> Short.parseShort(arg);
+        };
+    }
+
+    private OpCode.Type opType(String arg) {
+        if (isNumeric(arg)) {
+            return OpCode.Type.RegisterImmediate;
+        } else if (isKnownRegister(arg)) {
+            return OpCode.Type.RegisterRegister;
+        } else {
+            return OpCode.Type.RegisterIndex;
+        }
+    }
+
 
     private void updateArgSymbols(ParsedLine line) {
         line.args.forEach(symbol -> {
@@ -140,7 +161,7 @@ public class Program {
     }
 
     private boolean isDefiningASymbol(ParsedLine line) {
-        return !isKnowndOp(line.instruction);
+        return !isKnownOp(line.instruction);
     }
 
     private boolean hasSymbol(String symbol) {
@@ -171,11 +192,67 @@ public class Program {
         symbolTable.add(s);
     }
 
-    private void secondPass(List<ParsedLine> lines) {
+    private void secondPass(List<Instruction> instructions) {
         locationCounter = 0;
-        for (var line : lines) {
-//            execute(line);
+        for (var op : instructions) {
+            execute(op);
             locationCounter++;
+        }
+    }
+
+    private OpCode findOpCode(Instruction instruction) {
+        return Arrays.stream(directives)
+                .filter(d -> d.mnemonic.equals(instruction.op) && d.type == instruction.type)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void execute(Instruction instruction) {
+        OpCode opCode = findOpCode(instruction);
+
+        if (opCode == null) throw new OpCodeNotFoundError(instruction);
+
+        if (ADDRR.equals(opCode)) {
+            memory.add(instruction.args.get(0));
+        } else if (ADDRX.equals(opCode)) {
+            memory.add(registers.get("rx"));
+        } else if (ANDRR.equals(opCode)) {
+        } else if (ANDRX.equals(opCode)) {
+            memory.and(registers.get("rx"));
+        } else if (BEQRR.equals(opCode)) {
+        } else if (BEQRI.equals(opCode)) {
+        } else if (BNERR.equals(opCode)) {
+        } else if (BNERI.equals(opCode)) {
+        } else if (CALL.equals(opCode)) {
+        } else if (CMPRR.equals(opCode)) {
+        } else if (CMPRX.equals(opCode)) {
+            memory.cmp(registers.get("rx"));
+        } else if (DIV.equals(opCode)) {
+        } else if (HLT.equals(opCode)) {
+        } else if (JMPRR.equals(opCode)) {
+        } else if (JMPRI.equals(opCode)) {
+        } else if (JNZ.equals(opCode)) {
+        } else if (JP.equals(opCode)) {
+        } else if (JZ.equals(opCode)) {
+        } else if (MUL.equals(opCode)) {
+        } else if (NOT.equals(opCode)) {
+        } else if (ORRR.equals(opCode)) {
+        } else if (ORRX.equals(opCode)) {
+        } else if (POP.equals(opCode)) {
+        } else if (POPF.equals(opCode)) {
+        } else if (POPRR.equals(opCode)) {
+        } else if (POPRX.equals(opCode)) {
+        } else if (PUSH.equals(opCode)) {
+        } else if (PUSHF.equals(opCode)) {
+        } else if (READ.equals(opCode)) {
+        } else if (RET.equals(opCode)) {
+        } else if (STORE.equals(opCode)) {
+        } else if (SUB.equals(opCode)) {
+        } else if (SUBRR.equals(opCode)) {
+        } else if (SUBRX.equals(opCode)) {
+        } else if (WRITE.equals(opCode)) {
+        } else if (XORRI.equals(opCode)) {
+        } else if (XORRR.equals(opCode)) {
         }
     }
 
@@ -199,7 +276,7 @@ public class Program {
         for (short i = lastRef; i >= 0; i--) {
             if (i != lastRef) break;
 
-            var op = ops.get(i);
+            var op = instructions.get(i);
 
             lastRef = op.args.get(0);
             op.args.set(0, offset);
@@ -209,58 +286,13 @@ public class Program {
         symbol.setValue(definingValue);
     }
 
-    private boolean isKnowndOp(String op) {
-        return directiveTable.containsKey(op);
+    private boolean isKnownOp(String op) {
+        return Arrays.stream(directives).anyMatch(d -> d.mnemonic.equals(op));
     }
 
     private boolean isKnownRegister(String name) {
         return registers.containsKey(name);
     }
-
-    private boolean isNumeric(String str) {
-        try {
-            Double.parseDouble(str);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
-
-//    private void add(List<String> args) {
-//        var reg = args.get(0);
-//        memory.add(reg);
-//    }
-//
-//    private void sub(List<String> args) {
-//        var reg = args.get(0);
-//        memory.sub(reg);
-//    }
-//
-//    private void push(List<String> args) {
-//        var reg = args.get(0);
-//        memory.push(reg);
-//    }
-//
-//    private void pop(List<String> args) {
-//        var reg = args.get(0);
-//        memory.pop(reg);
-//    }
-//
-//    private void mov(List<String> args) {
-//        var to = args.get(0);
-//        var from = args.get(1); // TODO translate to address
-//        switch (to) {
-//            case "ax" -> memory.storeAx((short) 0);
-//            case "dx" -> memory.storeDx((short) 1);
-//            default -> {
-//                throw new Error("invalid register: " + to);
-//            }
-//        }
-//    }
-//
-//    private void mul() {
-//        memory.mul();
-//    }
 
     private ArrayList<String> clean(ArrayList<String> program) {
         var result = new ArrayList<String>();
@@ -277,13 +309,4 @@ public class Program {
         return result;
     }
 
-    class Op {
-        String op;
-        ArrayList<Short> args = new ArrayList<>();
-
-        @Override
-        public String toString() {
-            return op + ": " + args.get(0);
-        }
-    }
 }
