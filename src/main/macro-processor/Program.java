@@ -93,8 +93,8 @@ public class Program {
 
     private void storeOp(ParsedLine line) {
         var op = new Instruction();
-        op.op = line.instruction;
         op.type = opType(line.args.get(0));
+        op.op = findOpCode(line.instruction, op.type);
 
         line.args.forEach(arg -> op.args.add(parseArg(arg)));
 
@@ -200,59 +200,55 @@ public class Program {
         }
     }
 
-    private OpCode findOpCode(Instruction instruction) {
+    private OpCode findOpCode(String op, OpCode.Type type) {
         return Arrays.stream(directives)
-                .filter(d -> d.mnemonic.equals(instruction.op) && d.type == instruction.type)
+                .filter(d -> d.mnemonic.equals(op) && d.type == type)
                 .findFirst()
                 .orElse(null);
     }
 
     private void execute(Instruction instruction) {
-        OpCode opCode = findOpCode(instruction);
-
-        if (opCode == null) throw new OpCodeNotFoundError(instruction);
-
-        if (ADDRR.equals(opCode)) {
+        if (ADDRR.equals(instruction.op)) {
             memory.add(instruction.args.get(0));
-        } else if (ADDRX.equals(opCode)) {
+        } else if (ADDRX.equals(instruction.op)) {
             memory.add(registers.get("rx"));
-        } else if (ANDRR.equals(opCode)) {
-        } else if (ANDRX.equals(opCode)) {
+        } else if (ANDRR.equals(instruction.op)) {
+        } else if (ANDRX.equals(instruction.op)) {
             memory.and(registers.get("rx"));
-        } else if (BEQRR.equals(opCode)) {
-        } else if (BEQRI.equals(opCode)) {
-        } else if (BNERR.equals(opCode)) {
-        } else if (BNERI.equals(opCode)) {
-        } else if (CALL.equals(opCode)) {
-        } else if (CMPRR.equals(opCode)) {
-        } else if (CMPRX.equals(opCode)) {
+        } else if (BEQRR.equals(instruction.op)) {
+        } else if (BEQRI.equals(instruction.op)) {
+        } else if (BNERR.equals(instruction.op)) {
+        } else if (BNERI.equals(instruction.op)) {
+        } else if (CALL.equals(instruction.op)) {
+        } else if (CMPRR.equals(instruction.op)) {
+        } else if (CMPRX.equals(instruction.op)) {
             memory.cmp(registers.get("rx"));
-        } else if (DIV.equals(opCode)) {
-        } else if (HLT.equals(opCode)) {
-        } else if (JMPRR.equals(opCode)) {
-        } else if (JMPRI.equals(opCode)) {
-        } else if (JNZ.equals(opCode)) {
-        } else if (JP.equals(opCode)) {
-        } else if (JZ.equals(opCode)) {
-        } else if (MUL.equals(opCode)) {
-        } else if (NOT.equals(opCode)) {
-        } else if (ORRR.equals(opCode)) {
-        } else if (ORRX.equals(opCode)) {
-        } else if (POP.equals(opCode)) {
-        } else if (POPF.equals(opCode)) {
-        } else if (POPRR.equals(opCode)) {
-        } else if (POPRX.equals(opCode)) {
-        } else if (PUSH.equals(opCode)) {
-        } else if (PUSHF.equals(opCode)) {
-        } else if (READ.equals(opCode)) {
-        } else if (RET.equals(opCode)) {
-        } else if (STORE.equals(opCode)) {
-        } else if (SUB.equals(opCode)) {
-        } else if (SUBRR.equals(opCode)) {
-        } else if (SUBRX.equals(opCode)) {
-        } else if (WRITE.equals(opCode)) {
-        } else if (XORRI.equals(opCode)) {
-        } else if (XORRR.equals(opCode)) {
+        } else if (DIV.equals(instruction.op)) {
+        } else if (HLT.equals(instruction.op)) {
+        } else if (JMPRR.equals(instruction.op)) {
+        } else if (JMPRI.equals(instruction.op)) {
+        } else if (JNZ.equals(instruction.op)) {
+        } else if (JP.equals(instruction.op)) {
+        } else if (JZ.equals(instruction.op)) {
+        } else if (MUL.equals(instruction.op)) {
+        } else if (NOT.equals(instruction.op)) {
+        } else if (ORRR.equals(instruction.op)) {
+        } else if (ORRX.equals(instruction.op)) {
+        } else if (POP.equals(instruction.op)) {
+        } else if (POPF.equals(instruction.op)) {
+        } else if (POPRR.equals(instruction.op)) {
+        } else if (POPRX.equals(instruction.op)) {
+        } else if (PUSH.equals(instruction.op)) {
+        } else if (PUSHF.equals(instruction.op)) {
+        } else if (READ.equals(instruction.op)) {
+        } else if (RET.equals(instruction.op)) {
+        } else if (STORE.equals(instruction.op)) {
+        } else if (SUB.equals(instruction.op)) {
+        } else if (SUBRR.equals(instruction.op)) {
+        } else if (SUBRX.equals(instruction.op)) {
+        } else if (WRITE.equals(instruction.op)) {
+        } else if (XORRI.equals(instruction.op)) {
+        } else if (XORRR.equals(instruction.op)) {
         }
     }
 
