@@ -104,7 +104,7 @@ public class Program {
     private short parseArg(String arg) {
         return switch (opType(arg)) {
             case RegisterRegister -> registers.get(arg);
-            case RegisterIndex -> getSymbol(arg).getValue();
+            case RegisterIndex -> symbolOffset(getSymbol(arg));
             case RegisterImmediate -> Short.parseShort(arg);
         };
     }
