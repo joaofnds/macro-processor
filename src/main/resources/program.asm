@@ -1,15 +1,6 @@
-AC 20
-
-BEQ AB
-BNE AB
-JMP AB
-
-AB 10
-
-BEQ AC
-BNE AC
-JMP AC
-
-BEQ AX
-BNE DX
-JMP AX
+aa 22
+ab 22
+add aa
+add ab
+store ac
+write ac

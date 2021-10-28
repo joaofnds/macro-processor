@@ -5,7 +5,6 @@ class SymbolTableEntry {
 
     public SymbolTableEntry(String name) {
         this.name = name;
-        this.value = value;
     }
 
     public SymbolTableEntry(String name, short value) {
@@ -31,6 +30,11 @@ class SymbolTableEntry {
 
     public void setMultiplyDefined() {
         type = Type.MultiplyDefined;
+    }
+
+    @Override
+    public String toString() {
+        return name + ": " + value + " (" + type + ')';
     }
 
     enum Type {

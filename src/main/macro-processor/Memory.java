@@ -33,16 +33,20 @@ enum Flags {
 }
 
 public class Memory {
+    static final short AX = 0b11110000;
+    static final short DX = 0b11110000;
     private static final short MEM_SIZE = 2 << 12;
-    private static final String AX = "ax";
-    private static final String DX = "dx";
+    private final short symbolOffset = 2 << 10;
     private final short[] data = new short[MEM_SIZE];
     private final short si = 0;
+
     private BitSet sr = new BitSet(16);
     private short sp = MEM_SIZE - 1;
     private short ip = 0;
     private short dx = 0;
     private short ax = 0;
+    private short opPointer = 0;
+    private short symbolPointer = symbolOffset;
 
     public Memory() {
     }
@@ -56,13 +60,6 @@ public class Memory {
         }
 
         System.out.println(bs);
-    }
-
-    private short operand(String register) {
-        if (DX.equals(register)) {
-            return dx;
-        }
-        return ax;
     }
 
     public void storeAx(short address) {
@@ -87,15 +84,22 @@ public class Memory {
         return data[address];
     }
 
-    public void add(String reg) {
-        var opd = operand(reg);
+    public void storeOp(short op) {
+        data[opPointer] = op;
+        opPointer++;
+    }
 
-        ax = (short) (ax + opd);
+    public void storeSymbol(short value) {
+        data[symbolPointer] = value;
+        symbolPointer++;
+    }
+
+    public short symbolAddress(short offset) {
+        return (short) (symbolOffset + offset);
     }
 
     public void add(short address) {
-        dx = get(address);
-        add(DX);
+        ax += data[address];
     }
 
     public void divSi() {
@@ -106,11 +110,6 @@ public class Memory {
     public void divAx() {
         ax = 1;
         dx = 0;
-    }
-
-    public void sub(String reg) {
-        var opd = operand(reg);
-        ax = (short) (ax - opd);
     }
 
     public void sub(short address) {
@@ -128,11 +127,6 @@ public class Memory {
         dx = ax;
     }
 
-    public void cmp(String reg) {
-        var result = operand(reg);
-        sr.set(Flags.ZERO.getValue(), result == 0);
-    }
-
     public void cmp(short address) {
         dx = get(address);
         cmp(DX);
@@ -142,30 +136,14 @@ public class Memory {
         ax = (short) ~ax;
     }
 
-    public void or(String reg) {
-        var opd = operand(reg);
-        ax = (short) (ax | opd);
-    }
-
     public void or(short address) {
         dx = this.get(address);
         or(DX);
     }
 
-    public void xor(String reg) {
-        var opd = operand(reg);
-
-        ax = (short) (ax ^ opd);
-    }
-
     public void xor(short value) {
         dx = value;
         xor(DX);
-    }
-
-    public void and(String reg) {
-        var opd = operand(reg);
-        ax = (short) (ax & opd);
     }
 
     public void and(short address) {
@@ -212,33 +190,15 @@ public class Memory {
         data[address] = stackPop();
     }
 
-    public void pop(String reg) {
-        switch (reg) {
-            case AX:
-                ax = stackPop();
-                break;
-            case DX:
-                dx = stackPop();
-                break;
-        }
-    }
-
     public void popf() {
         sr = BitsetUtils.fromShort(stackPop());
-    }
-
-    public void push(String reg) {
-        switch (reg) {
-            case AX -> stackPush(ax);
-            case DX -> stackPush(dx);
-        }
     }
 
     public void pushf() {
         stackPush((short) BitsetUtils.toInt(sr));
     }
 
-    private void write(short address) {
+    void write(short address) {
         System.out.println(get(address));
     }
 

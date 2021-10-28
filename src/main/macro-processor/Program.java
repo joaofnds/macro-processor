@@ -38,7 +38,8 @@ public class Program {
     static final OpCode PUSHF = new OpCode("pushf", (byte) 26, OpCode.Type.RegisterRegister);
     static final OpCode READ  = new OpCode("read",  (byte) 28, OpCode.Type.RegisterIndex);
     static final OpCode RET   = new OpCode("ret",   (byte) 20, OpCode.Type.RegisterRegister);
-    static final OpCode STORE = new OpCode("store", (byte) 27, OpCode.Type.RegisterRegister);
+    static final OpCode STRRR = new OpCode("store", (byte) 27, OpCode.Type.RegisterRegister);
+    static final OpCode STRRX = new OpCode("store", (byte) 27, OpCode.Type.RegisterIndex);
     static final OpCode SUB   = new OpCode("sub",   (byte) 1,  OpCode.Type.RegisterRegister);
     static final OpCode SUBRR = new OpCode("sub",   (byte) 3,  OpCode.Type.RegisterRegister);
     static final OpCode SUBRX = new OpCode("sub",   (byte) 4,  OpCode.Type.RegisterIndex);
@@ -49,15 +50,15 @@ public class Program {
     private final OpCode[] directives = {
             ADDRR, ADDRX, ANDRR, ANDRX, BEQRR, BEQRI, BNERR, BNERI, CALL, CMPRR, CMPRX, DIV,
             HLT, JMPRR, JMPRI, JNZ, JP, JZ, MUL, NOT, ORRR, ORRX, POP, POPF, POPRR, POPRX,
-            PUSH, PUSHF, READ, RET, STORE, SUB, SUBRR, SUBRX, WRITE, XORRI, XORRR,
+            PUSH, PUSHF, READ, RET, STRRR, STRRX, SUB, SUBRR, SUBRX, WRITE, XORRI, XORRR,
     };
 
     Memory memory = new Memory();
     ArrayList<SymbolTableEntry> symbolTable = new ArrayList<>();
 
     HashMap<String, Short> registers = new HashMap<>() {{
-        put("ax", (short) 0b11110000);
-        put("dx", (short) 0b11110001);
+        put("ax", Memory.AX);
+        put("dx", Memory.DX);
     }};
     List<Instruction> instructions = new ArrayList<>();
 
@@ -93,7 +94,7 @@ public class Program {
 
     private void storeOp(ParsedLine line) {
         var op = new Instruction();
-        op.type = opType(line.args.get(0));
+        op.type = line.args.size() > 0 ? opType(line.args.get(0)) : OpCode.Type.RegisterRegister;
         op.op = findOpCode(line.instruction, op.type);
 
         line.args.forEach(arg -> op.args.add(parseArg(arg)));
@@ -137,7 +138,10 @@ public class Program {
             var value = Short.parseShort(line.args.get(0));
 
             if (symbol == null) {
-                putSymbol(new SymbolTableEntry(line.instruction, value));
+                var s = new SymbolTableEntry(line.instruction, value);
+                s.setValue(Short.parseShort(line.args.get(0)));
+                s.setDefined();
+                putSymbol(s);
             } else {
                 defineAndLink(symbol, value);
             }
@@ -193,10 +197,22 @@ public class Program {
     }
 
     private void secondPass(List<Instruction> instructions) {
+        loadIntoMemory();
+
         locationCounter = 0;
         for (var op : instructions) {
             execute(op);
             locationCounter++;
+        }
+    }
+
+    private void loadIntoMemory() {
+        for (SymbolTableEntry symbol : symbolTable) {
+            memory.storeSymbol(symbol.getValue());
+        }
+
+        for (var instruction : instructions) {
+            memory.storeOp(instruction.op.opcode);
         }
     }
 
@@ -209,9 +225,11 @@ public class Program {
 
     private void execute(Instruction instruction) {
         if (ADDRR.equals(instruction.op)) {
-            memory.add(instruction.args.get(0));
+            Short address = instruction.args.get(0);
+            memory.add(address);
         } else if (ADDRX.equals(instruction.op)) {
-            memory.add(registers.get("rx"));
+            short address = memory.symbolAddress(instruction.args.get(0));
+            memory.add(address);
         } else if (ANDRR.equals(instruction.op)) {
         } else if (ANDRX.equals(instruction.op)) {
             memory.and(registers.get("rx"));
@@ -225,6 +243,7 @@ public class Program {
             memory.cmp(registers.get("rx"));
         } else if (DIV.equals(instruction.op)) {
         } else if (HLT.equals(instruction.op)) {
+            memory.hlt();
         } else if (JMPRR.equals(instruction.op)) {
         } else if (JMPRI.equals(instruction.op)) {
         } else if (JNZ.equals(instruction.op)) {
@@ -242,11 +261,16 @@ public class Program {
         } else if (PUSHF.equals(instruction.op)) {
         } else if (READ.equals(instruction.op)) {
         } else if (RET.equals(instruction.op)) {
-        } else if (STORE.equals(instruction.op)) {
+        } else if (STRRR.equals(instruction.op)) {
+        } else if (STRRX.equals(instruction.op)) {
+            short address = memory.symbolAddress(instruction.args.get(0));
+            memory.storeAx(address);
         } else if (SUB.equals(instruction.op)) {
         } else if (SUBRR.equals(instruction.op)) {
         } else if (SUBRX.equals(instruction.op)) {
         } else if (WRITE.equals(instruction.op)) {
+            short address = memory.symbolAddress(instruction.args.get(0));
+            memory.write(address);
         } else if (XORRI.equals(instruction.op)) {
         } else if (XORRR.equals(instruction.op)) {
         }
