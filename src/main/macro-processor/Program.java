@@ -64,20 +64,7 @@ public class Program {
 
     short locationCounter = 0; // LC
 
-    public Program(String inputFile) throws IOException {
-        var program = expandMacro(inputFile);
-        var lines = clean(program).stream().map(ParsedLine::fromLine).collect(Collectors.toList());
-
-        firstPass(lines);
-        secondPass(instructions);
-    }
-
-    public static void main(String[] args) throws IOException {
-        var inputFile = "src/main/resources/program.asm";
-        new Program(inputFile);
-    }
-
-    private void firstPass(List<ParsedLine> lines) {
+    public List<Instruction> firstPass(List<ParsedLine> lines) {
         locationCounter = 0;
 
         for (var line : lines) {
@@ -90,6 +77,8 @@ public class Program {
 
             locationCounter++;
         }
+
+        return instructions;
     }
 
     private void storeOp(ParsedLine line) {
@@ -196,7 +185,7 @@ public class Program {
         symbolTable.add(s);
     }
 
-    private void secondPass(List<Instruction> instructions) {
+    public void secondPass(List<Instruction> instructions) {
         loadIntoMemory();
 
         locationCounter = 0;
@@ -276,10 +265,6 @@ public class Program {
         }
     }
 
-    private ArrayList<String> expandMacro(String inputFile) throws IOException {
-        return new MacroProcessor(inputFile).processMacro();
-    }
-
     private void defineLabel(String name) {
         if (hasSymbol(name)) {
             getSymbol(name).setMultiplyDefined();
@@ -313,20 +298,4 @@ public class Program {
     private boolean isKnownRegister(String name) {
         return registers.containsKey(name);
     }
-
-    private ArrayList<String> clean(ArrayList<String> program) {
-        var result = new ArrayList<String>();
-
-        for (String line : program) {
-            line = line.trim().toLowerCase();
-            if (line.isEmpty()) continue;
-
-            line = line.replaceAll("\s+", " ");
-
-            result.add(line);
-        }
-
-        return result;
-    }
-
 }
