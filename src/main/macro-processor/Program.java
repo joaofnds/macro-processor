@@ -64,7 +64,7 @@ public class Program {
 
     short locationCounter = 0; // LC
 
-    public List<Instruction> firstPass(List<ParsedLine> lines) {
+    public IntermediateFile firstPass(List<ParsedLine> lines) {
         locationCounter = 0;
 
         for (var line : lines) {
@@ -78,7 +78,7 @@ public class Program {
             locationCounter++;
         }
 
-        return instructions;
+        return new IntermediateFile(symbolTable, instructions);
     }
 
     private void storeOp(ParsedLine line) {
@@ -185,22 +185,22 @@ public class Program {
         symbolTable.add(s);
     }
 
-    public void secondPass(List<Instruction> instructions) {
-        loadIntoMemory();
+    public void secondPass(IntermediateFile intermediateFile) {
+        loadIntoMemory(intermediateFile);
 
         locationCounter = 0;
-        for (var op : instructions) {
+        for (var op : intermediateFile.instructions) {
             execute(op);
             locationCounter++;
         }
     }
 
-    private void loadIntoMemory() {
-        for (SymbolTableEntry symbol : symbolTable) {
+    private void loadIntoMemory(IntermediateFile intermediateFile) {
+        for (SymbolTableEntry symbol : intermediateFile.symbolTable) {
             memory.storeSymbol(symbol.getValue());
         }
 
-        for (var instruction : instructions) {
+        for (var instruction : intermediateFile.instructions) {
             memory.storeOp(instruction.op.opcode);
         }
     }

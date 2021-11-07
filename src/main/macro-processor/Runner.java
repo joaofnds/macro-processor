@@ -9,8 +9,8 @@ public class Runner {
         var lines = clean(program).stream().map(ParsedLine::fromLine).collect(Collectors.toList());
 
         Program p = new Program();
-        var objectFile = p.firstPass(lines);
-        p.secondPass(objectFile);
+        var intermediateFile = p.firstPass(lines);
+        p.secondPass(intermediateFile);
     }
 
     private static ArrayList<String> clean(ArrayList<String> program) {
