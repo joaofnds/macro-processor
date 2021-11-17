@@ -83,8 +83,8 @@ public class Program {
 
     private void storeOp(ParsedLine line) {
         var op = new Instruction();
-        op.type = line.args.size() > 0 ? opType(line.args.get(0)) : OpCode.Type.RegisterRegister;
-        op.op = findOpCode(line.instruction, op.type);
+        var type = line.args.size() > 0 ? opType(line.args.get(0)) : OpCode.Type.RegisterRegister;
+        op.op = findOpCode(line.instruction, type);
 
         line.args.forEach(arg -> op.args.add(parseArg(arg)));
 
