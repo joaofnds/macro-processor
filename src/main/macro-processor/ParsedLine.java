@@ -20,7 +20,7 @@ class ParsedLine {
         if (hasLabel) {
             var labelAndInst = line.split(":");
             parsedLine.label = labelAndInst[0].strip();
-            line = labelAndInst[1];
+            line = labelAndInst[1].strip();
         }
 
         var indexOfFirstSpace = line.strip().indexOf(" ");

@@ -35,17 +35,17 @@ enum Flags {
 public class Memory {
     static final short AX = 0b11110000;
     static final short DX = 0b11110000;
-    private static final short MEM_SIZE = 2 << 12;
-    private final short symbolOffset = 2 << 10;
-    private final short[] data = new short[MEM_SIZE];
-    private final short si = 0;
 
+    private static final short MEM_SIZE = 2 << 12;
+    public final short[] data = new short[MEM_SIZE];
+    public final short opStart = 0;
+    private final short symbolOffset = 2 << 10;
+    private final short si = 0;
+    public short ip = opStart;
     private BitSet sr = new BitSet(16);
     private short sp = MEM_SIZE - 1;
-    private short ip = 0;
     private short dx = 0;
     private short ax = 0;
-    private short opPointer = 0;
     private short symbolPointer = symbolOffset;
 
     public Memory() {
@@ -74,19 +74,19 @@ public class Memory {
         data[address] = dx;
     }
 
-    public void accByPass(short data) { // TODO: remove
-        ax = data;
-    }
-
     public short get(short address) {
         assertValidAddress(address);
 
         return data[address];
     }
 
-    public void storeOp(short op) {
-        data[opPointer] = op;
-        opPointer++;
+    public short readOp() {
+        return data[ip++];
+    }
+
+    public void storeOp(short op, short arg) {
+        data[ip++] = op;
+        data[ip++] = arg;
     }
 
     public void storeSymbol(short value) {
@@ -99,7 +99,7 @@ public class Memory {
     }
 
     public void add(short address) {
-        ax += data[address];
+        ax += get(address);
     }
 
     public void divSi() {
@@ -113,8 +113,7 @@ public class Memory {
     }
 
     public void sub(short address) {
-        dx = get(address);
-        sub(DX);
+        ax -= get(address);
     }
 
     public void mul() {
@@ -129,7 +128,8 @@ public class Memory {
 
     public void cmp(short address) {
         dx = get(address);
-        cmp(DX);
+        sr.set(Flags.ZERO.getValue(), ax == dx);
+        sr.set(Flags.SIGN.getValue(), ax < dx);
     }
 
     public void not() {
@@ -152,7 +152,10 @@ public class Memory {
     }
 
     public void jmp(short address) {
-        ip = address;
+        // each instruction is followed by its args, so we need to
+        // double the offset to point to the correct instruction
+        short offset = data[address];
+        ip = (short) (offset * 2);
     }
 
     public void jz(short address) {
@@ -169,7 +172,7 @@ public class Memory {
 
     public void jp(short address) {
         if (!sr.get(Flags.SIGN.getValue())) {
-            ip = address;
+            jmp(address);
         }
     }
 
@@ -226,4 +229,5 @@ public class Memory {
             throw new Error("address out of bounds");
         }
     }
+
 }
