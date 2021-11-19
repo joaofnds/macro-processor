@@ -294,17 +294,17 @@ public class Program {
     }
 
     private void defineLabel(String name) {
-        SymbolTableEntry entry = null;
-
         if (hasSymbol(name)) {
-            entry = getSymbol(name);
+            SymbolTableEntry entry = getSymbol(name);
+            entry.setValue(locationCounter);
+            entry.setDefined();
         } else {
-            entry = new SymbolTableEntry(name);
+            SymbolTableEntry entry = new SymbolTableEntry(name);
+            entry.setValue(locationCounter);
+            entry.setDefined();
+            putSymbol(entry);
         }
 
-        entry.setValue(locationCounter);
-        entry.setDefined();
-        putSymbol(entry);
     }
 
     private void defineAndLink(SymbolTableEntry symbol, short definingValue) {
